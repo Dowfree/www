@@ -9,15 +9,13 @@ from urllib import parse
 
 from aiohttp import web
 
-from apis import APIErrors
-
 def get(path):
     """
     Define decorator @get('/path')
     """
     def decorator(func):
         @functools.wraps(func)
-        def wrapper(*args, *kw):
+        def wrapper(*args, **kw):
             return func(*args, **kw)
         wrapper.__method__ = 'GET'
         wrapper.__route__ = path
@@ -31,7 +29,7 @@ def post(path):
     """
     def decorator(func):
         @functools.wraps(func)
-        def wrapper(*args, *kw):
+        def wrapper(*args, **kw):
             return func(*args, **kw)
         wrapper.__method__ = 'POST'
         wrapper.__route__ = path
@@ -139,7 +137,7 @@ class RequestHandler(object):
         try:
             r = await self._func(**kw)
             return r
-        except APIError as e:
+        except AttributeError as e:
             return dict(error=e.error, data=e.data, message=e.message)
 
 def add_static(app):
@@ -154,8 +152,8 @@ def add_route(app, fn):
         raise ValueError('@get or @post not defined in %s' % str(fn))
     if not asyncio.iscoroutine(fn) and not inspect.isgeneratorfunction(fn):
         fn = asyncio.coroutine(fn)
-    logging.info('add route %s %s => %s(%s)' % (method, path, fn.__name__, '.'.join(inspect.signature(fn).parameters.kyes())))
-    app.route.add_router(method, path, RequestHandler(app, fn))
+    logging.info('add route %s %s => %s(%s)' % (method, path, fn.__name__, ','.join(inspect.signature(fn).parameters.keys())))
+    app.router.add_route(method, path, RequestHandler(app, fn))
 
 def add_routes(app, module_name):
     n = module_name.rfind('.')
@@ -172,4 +170,5 @@ def add_routes(app, module_name):
             method = getattr(fn, '__method__', None)
             path = getattr(fn, '__route__', None)
             if method and path:
-                return add_route(app, fn)
+                add_route(app, fn)
+
