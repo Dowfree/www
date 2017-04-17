@@ -9,6 +9,8 @@ from urllib import parse
 
 from aiohttp import web
 
+from apis import APIError
+
 def get(path):
     """
     Define decorator @get('/path')
@@ -137,7 +139,7 @@ class RequestHandler(object):
         try:
             r = await self._func(**kw)
             return r
-        except AttributeError as e:
+        except APIError as e:
             return dict(error=e.error, data=e.data, message=e.message)
 
 def add_static(app):
