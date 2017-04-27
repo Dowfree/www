@@ -1,14 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-__author__ = 'Dowfree'
-
-'''
+"""
 async web application.
-'''
+"""
 
-import logging
-logging.basicConfig(level=logging.INFO)
+
+import logging; logging.basicConfig(level=logging.INFO)
 
 import asyncio, os, json, time
 from datetime import datetime
@@ -18,6 +16,10 @@ from jinja2 import Environment, FileSystemLoader
 
 import orm
 from coroweb import add_routes, add_static
+
+from handlers import cookie2user, COOKIE_NAME
+
+__author__ = 'Dowfree'
 
 
 def init_jinja2(app, **kw):
@@ -47,6 +49,19 @@ async def logger_factory(app, handler):
         await asyncio.sleep(0.3)
         return await handler(request)
     return logger
+
+async def auth_factory(app, handler):
+    async def auth(request):
+        logging.info('check user: %s %s' % (request.method, request.path))
+        request.__user__ = None
+        cookie_str = request.cookies.get(COOKIE_NAME)
+        if cookie_str:
+            user = await cookie2user(cookie_str)
+            if user:
+                logging.info('set current user: %s' % user.email)
+                request.__user__ = user
+        return await handler(request)
+    return auth
 
 async def data_factory(app, handler):
     async def parse_data(request):
@@ -117,7 +132,7 @@ def datetime_filter(t):
 async def init(loop):
     await orm.create_pool(loop=loop, host='127.0.0.1', port=3306, user='awesome-python3-webapp', password='webapp_mysql', db='awesome')
     app = web.Application(loop=loop, middlewares=[
-        logger_factory, response_factory
+        logger_factory, response_factory, auth_factory
     ])
     init_jinja2(app, filters=dict(datetime=datetime_filter))
     add_routes(app, 'handlers')

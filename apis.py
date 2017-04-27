@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-__author__ = 'Dowfree'
-
 """
 JSON API definition.
 """
 
 import json, logging, inspect,  functools
+
+__author__ = 'Dowfree'
 
 
 class APIError(Exception):
