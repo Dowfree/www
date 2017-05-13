@@ -49,7 +49,7 @@ async def select(sql, args, size=None):
         logging.info('row returned: %s' % len(rs))
         return rs
 
-async def execute(sql, args):
+async def execute(sql, args, autocommit=True):
     log(sql)
     with (await __pool) as conn:
         try:
@@ -57,7 +57,11 @@ async def execute(sql, args):
             await cur.execute(sql.replace('?', '%s'), args)
             affected = cur.rowcount
             await cur.close()
+            if not autocommit:
+                await conn.commit()
         except BaseException as e:
+            if not autocommit:
+                await conn.rollback()
             raise
         return affected
 
